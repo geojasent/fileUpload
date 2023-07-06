@@ -1,7 +1,9 @@
 const express = require("express");
+const dotenv = require("dotenv").config();
 const app = express();
 const cors = require("cors");
 const pool = require("./connection");
+const multer = require("multer");
 
 app.use(cors());
 app.use(express.json());
@@ -10,13 +12,15 @@ app.listen(5000, () => {
   console.log("Server has started on port 5000");
 });
 
-//Route import
-app.post("/upload", async (req, res) => {
+const upload = multer({
+  dest: process.env.FILEPATH,
+  limits: { fileSize: 4 * 1024 * 1024 },
+});
+app.post("/upload", upload.single("purchaseProof"), async (req, res) => {
   try {
-    const submittedInfo = req.body;
     const newUpload = await pool.query(
       "INSERT INTO stored_file_path (user_id, file_path) VALUES ($1, $2) RETURNING *",
-      [submittedInfo.user_id, submittedInfo.file_path]
+      [req.file.size, req.file.path]
     );
     res.json(newUpload.rows[0]);
   } catch (err) {
